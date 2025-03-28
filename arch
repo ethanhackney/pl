@@ -1,0 +1,560 @@
+// how will i handle array references in scopes???
+//
+// maybe have a global reference counting map
+extern std::unordered_map<value*,int> g_ref;
+
+global_scope = {}
+curr_scope = &global_scope
+
+parse():
+        if type() == TOK_FUNC:
+                return parse_func_def()
+
+        if type() == TOK_WORD:
+                w = lex()
+                next()
+                if type() == TOK_LPAREN:
+                        p = new ast{AST_FUNC_CALL}
+                        p.str = w
+                        next()
+                        while type() != TOK_RPAREN:
+                                p.args.push(expr())
+                                if type() == TOK_COMMA:
+                                        next()
+                        next()
+                        return p
+
+parse_func_def():
+        p = new ast{AST_FUNC_DEF}
+
+        expect(TOK_FUNC)
+        p.name = lex()
+        expect(TOK_WORD)
+        expect(TOK_LPAREN)
+
+        while type() != TOK_RPAREN:
+                p.argnames.push(lex())
+                expect(TOK_WORD)
+                if type() == TOK_COMMA:
+                        expect(TOK_COMMA)
+
+        expect(TOK_RPAREN)
+        expect(TOK_LBRACE)
+
+        while type() != TOK_RBRACE:
+                p.stmts.push(parse())
+
+        expect(TOK_RBRACE)
+        return p
+
+eval():
+        if type() == AST_FUNC:
+                eval_func_def()
+
+eval_func_def():
+        vp = new value{VAL_FUNC}
+        vp->node = this->copy()
+        
+        curr_scope.set(name(), vp)
+
+        return
+
+eval_func_call():
+        name = _str
+        vp = curr_scope.resolve(name)
+
+        if vp type is not a function:
+                error()
+
+        np = vp->node
+
+        if number of args doesnt match expected number:
+                error()
+
+        scope = {}
+        for i = 0 to np.argnames.len():
+                scope.set(np.argnames[i], _args[i]->expr_eval())
+
+        # do the scope thing for all block statements!!!!
+        scope.parent = curr_scope
+        curr_scope = scope
+        np->eval()
+
+        for pair in scope.tab:
+                vp = pair.second
+                if is argument name:
+                        if is not array:
+                                delete it
+                        if is unnamed array:
+                                delete it
+
+                        # because this should work properly
+                        fn([ 1, 2, 3, 4 ])
+                        # even though the argument will be an array reference
+                        # we still want to free it
+                        # no that already works fine because no symbol table
+                        # entry will be made so nothing will need to be freed
+                else:
+                        delete it
+
+        curr_scope = scope.parent
+
+scope(void):
+        do nothing
+
+scope(vector<string> names, vector<ast*> exprs)
+        for i = 0 to names.len()
+                scope.set(names[i], exprs[i]->expr_eval())
+
+scope.set(name, value):
+        if name does not exist in table:
+                if value is an array:
+                        ref[value]++
+                table[name] = value
+                return
+
+        curr = table[name]
+        if curr.type is not array:
+                delete curr
+        else:
+                ref[curr]--
+                if ref[curr] == 0:
+                        delete curr
+
+        if value is an array:
+                ref[value]++
+
+        table[name] = value
+
+scope.get(name):
+        p = table.find(name)
+        if p found:
+                return p.second
+
+        if parent:
+                return parent.get(name)
+
+        return nil
+
+~scope():
+        freed = {}
+
+p = "ethan"
+
+func fn() {
+        p = []
+}
+
+curr_scope.set("p", [])
+
+scope_set(name, value):
+
+copy_ast():
+        if type() == AST_ERR:
+                return new ast{AST_ERR}
+
+        if type() == AST_ASSIGN:
+                p = new ast{AST_ASSIGN}
+                p.left = left->copy()
+                p.right = right->copy()
+                return p
+
+        if type() == AST_STR:
+                return new ast{AST_STR, _str}
+
+        if type() == AST_INT:
+                return new ast{AST_INT, _i}
+
+        if type() == AST_ARR:
+                p = new ast{AST_ARR}
+                for elem in arr:
+                        p.arr.push(elem->copy())
+                return p
+
+        if type() == AST_ARR_ASSIGN:
+                p = new ast{AST_ARR_ASSIGN}
+                p.str = _str
+                for ip in _idx:
+                        p.idx.push(ip->copy())
+                p.expr = expr->copy()
+
+        and so onn and so forth
+        
+
+class scope {
+private:
+        std::unordered_map<std::string,value*> _tab;
+        std::unordered_set<std::string>        _args;
+        scope                                  *_parent;
+public:
+        scope(void);
+        scope(scope *parent);
+
+        value *resolve(const std::string& name)
+        {
+                auto curr = this;
+
+                while (curr) {
+                        auto p = curr->_tab.find(name);
+                        if (p != curr->_tab.end())
+                                return p->second;
+                        curr = curr->parent();
+                }
+
+                return nullptr;
+        }
+
+        scope *parent(void)
+        {
+                return _parent;
+        }
+
+        ~scope()
+        {
+                for (auto name : _args) {
+                        auto vp = _tab[name]
+
+                        if (vp->type() != VAL_ARR) {
+                                delete vp;
+                        } else {
+                                g_ref[vp]--;
+                                if (g_ref[vp] == 0)
+                                        delete vp;
+                        }
+                }
+
+                for (auto p : _tab) {
+                        if (args.find(p.first) != args.end())
+                                continue;
+                        delete p.second
+                }
+        }
+};
+
+func(array) {
+     i = 0
+     while i < arr.len():
+             p = array
+}
+
+arr = [ "ethan", "hackney" ]
+
+func(arr)
+
+value = {
+     .type = VAL_ARR,
+     .arr = [
+             {
+                     .type = VAL_STR,
+                     .s = "ethan",
+             },
+             {
+                     .type = VAL_STR,
+                     .s = "hackney",
+             },
+     ],
+}
+
+global_scope = {
+     .parent = nil,
+     .tab = {
+             ["arr"] = &value,
+     },
+},
+
+func_scope = {
+     .parent = global_scope,
+     .tab = {
+             ["array"] = &value,
+     }
+}
+
+while_scope = {
+     .parent = func_scope,
+     .tab = {
+             ["p"] = &value,
+     }
+}
+
+ref_tab[&value] = 3
+
+struct query {
+
+        func ctor(q) {
+                query = q
+        }
+
+        func exec() {
+                db_query(query)
+        }
+}
+
+struct name {
+        self.poop = "shit"
+
+        func ctor(q, first, mid, last) {
+                q = query(q)
+                q.q = "SHIT"
+                first = first
+                mid = mid
+                last = last
+        }
+
+        func query() {
+                return q
+        }
+}
+
+n = name("ethan", "andrew", "hackney")
+
+n.poop = "fuck"
+
+parse():
+        w = word
+        expect(TOK_WORD)
+        if type() == TOK_LPAREN:
+                vp = curr_scope.get(w)
+
+                if vp.type() == VAL_STRUCT:
+                        ap = new ast{STRUCT_CTOR}
+                else
+                        ap = new ast{FUNC_CALL}
+
+eval_struct_def(p):
+        vp = new value{VAL_STRUCT, p.str()}
+        vp.syms = new scope{curr_scope}
+        curr_scope = vp.syms
+
+curr_scope = {
+        ["n"] = {
+                ._type = VAL_STRUCT,
+                ._scope = {
+                        .parent = last_scope,
+                        .tab = {
+                                ["q"] = {
+                                        ._type = VAL_STRUCT,
+                                        ._scope = {
+                                                .parent = last_scope,
+                                                .tab = {
+                                                        ["q"] = {
+                                                                .type = VAL_STR,
+                                                                .value = "SHIT",
+                                                        },
+                                                },
+                                        }
+                                },
+                                ["first"] = {
+                                        .type = VAL_STR,
+                                        .value = "ethan",
+                                },
+                                ["mid"] = {
+                                        .type = VAL_STR,
+                                        .value = "andrew",
+                                },
+                                ["last"] = {
+                                        .type = VAL_STR,
+                                        .value = "hackney",
+                                },
+                        },
+                },
+        }
+}
+
+n.query().exec()       # eval_member_call
+n.query().q = "POOP"   # eval_member_assign
+print(n.query().q)     # eval_member_ref
+ret = n.query().exec() # eval_expr
+
+eval_member_call(p):
+        vp = curr_scope.get(p.str)
+        if !vp:
+                error()
+        if vp.type() != VAL_STRUCT:
+                error()
+
+        tmp = curr_scope
+        curr_scope = vp->scope()
+
+        members = [ "query", "exec" ]
+
+        ret = nil
+        for i = 0 to p.members.len():
+                vp = curr_scope->resolve(p.members[i])
+                if vp is not function:
+                        error()
+                ret = vp->call()
+                if ret is not VAL_STRUCT:
+                        break
+                curr_scope = ret->scope
+
+        curr_scope = tmp
+        return ret
+
+eval_member_ref(p):
+        vp = curr_scope.get(p.str)
+        if !vp:
+                error()
+        if vp.type() != VAL_STRUCT:
+                error()
+
+        tmp = curr_scope
+        curr_scope = vp->scope()
+
+        members = [ "query", "exec" ]
+
+        for i = 0 to p.members.len() - 1:
+                vp = curr_scope->resolve(p.members[i])
+                if vp is not struct:
+                        error()
+
+        ret = curr_scope->resolve(p.members[p.members.len() - 1])
+        curr_scope = tmp
+        return ret
+
+eval_member_assign(p):
+        vp = curr_scope.get(p.str)
+        if !vp:
+                error()
+        if vp.type() != VAL_STRUCT:
+                error()
+
+        tmp = curr_scope
+        curr_scope = vp->scope()
+
+        members = [ "q", "q" ]
+
+        for i = 0 to p.members.len() - 1:
+                vp = curr_scope->resolve(p.members[i])
+                if vp is not struct:
+                        error()
+                curr_scope = vp->scope
+
+        members = [ "query", "exec" ]
+
+        curr_scope.set(members[p.members.len() - 1], expr_eval(p.expr_eval())
+        curr_scope = tmp
+
+value{
+        .type = VAL_STRUCT,
+        .name = "name",
+        .syms = scope{
+                .parent = curr_scope,
+                .tab = {
+                        ["poop"] = {
+                                .type = VAL_STR,
+                                .s = "shit",
+                        },
+                        ["first"] = {
+                                .type = VAL_STR,
+                                .s = "ethan",
+                        },
+                        ["mid"] = {
+                                .type = VAL_STR,
+                                .s = "andrew",
+                        },
+                        ["last"] = {
+                                .type = VAL_STR,
+                                .s = "hackney",
+                        },
+                        ["ctor"] = {
+                                .type = VAL_FUNC,
+                                .func = {
+                                        stmts[]
+                                },
+                        },
+                },
+        },
+}
+
+ast{
+        .type = AST_STRUCT_DEF,
+        .name = "name",
+        .stmts = [
+                {
+                        .type = AST_MEMBER_ASSIGN,
+                        .members = [
+                                "self",
+                                "poop",
+                        ],
+                        .expr = {
+                                .type = AST_STR,
+                                .value = "shit",
+                        },
+                },
+                {
+                        .type = AST_FUNC_DEF,
+                        .name = "ctor",
+                        .params = [
+                                "first",
+                                "mid",
+                                "last",
+                        ],
+                        .stmts = [
+                                {
+                                        .type = AST_MEMBER_ASSIGN,
+                                        .members = [
+                                                "self",
+                                                "first",
+                                        ],
+                                        .expr = {
+                                                .type = AST_VAR_REF,
+                                                .value = "first",
+                                        },
+                                },
+                                {
+                                        .type = AST_MEMBER_ASSIGN,
+                                        .members = [
+                                                "self",
+                                                "mid",
+                                        ],
+                                        .expr = {
+                                                .type = AST_VAR_REF,
+                                                .value = "mid",
+                                        },
+                                },
+                                {
+                                        .type = AST_MEMBER_ASSIGN,
+                                        .members = [
+                                                "self",
+                                                "last",
+                                        ],
+                                        .expr = {
+                                                .type = AST_VAR_REF,
+                                                .value = "last",
+                                        },
+                                },
+                        ],
+                },
+        ],
+}
+
+struct needs:
+        name
+        scope()
+
+stmt():
+        if type() == TOK_STRUCT:
+                expect(TOK_STRUCT)
+                name = lex.lex()
+                expect(TOK_WORD)
+
+                p = new ast{AST_STRUCT_DEF, name}
+                expect(TOK_LBRACE)
+
+                while type() != TOK_RBRACE:
+                        if not assignment or func def:
+                                error()
+                        p.push_stmt(stmt())
+
+                expect(TOK_RBRACE)
+                return p
+
+        if type() == TOK_WORD:
+                w = lex.lex()
+                expect(TOK_WORD)
+                if type() == TOK_DOT:
+                        ap = new ast{AST_MEMBER_ASSIGN, w}
+                        while type() == TOK_DOT:
+                                expect(TOK_DOT)
+                                ap.push_member(lex.lex())
+                                expect(TOK_WORD)
