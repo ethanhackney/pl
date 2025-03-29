@@ -36,19 +36,16 @@ enum {
 
 class token {
 private:
-        std::string _lex;
-        long        _i;
-        int         _type;
-
-        void init(int type, const std::string& lex);
+        std::string _lex  {""};
+        long        _i    {-1};
+        int         _type {TOK_ERR};
 public:
-        token(int type);
-        token(int type, const std::string& lex);
+        token(int type, const std::string& lex = "");
         token(void);
 
-        const std::string& lex(void) const;
+        const std::string& lex(void)  const;
         const std::string& name(void) const;
-        long               i(void) const;
+        long               i(void)    const;
         int                type(void) const;
 };
 

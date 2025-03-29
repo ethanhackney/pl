@@ -20,55 +20,49 @@ enum {
 
 class value {
 private:
-        std::vector<value*> _arr;
-        std::string         _s;
-        scope               *_members;
-        value               *_struct_def;
-        value               *_ptr;
-        long                _i;
-        int                 _type;
-        ast                 *_func;
-        ast                 *_def;
+        std::vector<value*> _arr      {};
+        std::string         _s        {};
+        scope               *_members {nullptr};
+        value               *_ptr     {nullptr};
+        long                _i        {-1};
+        int                 _type     {VAL_ERR};
+        ast                 *_func    {nullptr};
+        ast                 *_def     {nullptr};
 
-        void init(int type, const std::string& s, long i, value *vp, ast *func);
+        void typeok(void) const;
 public:
 
         value(void);
         value(int type);
         value(int type, long i);
         value(int type, const std::string& s);
-        value(int type, value *vp);
         value(int type, ast *func);
-        value(int type, scope *parent);
         ~value();
 
-        const std::vector<value*>& arr(void) const;
-        std::vector<value*>&       arr_non_const(void);
-        const std::string&         s(void) const;
-        const std::string&         name(void) const;
-        scope                      *members(void);
-        value                      *copy(void);
-        value                      *ptr(void);
-        value                      *arr_get(size_t i);
-        value                      *member(const std::string& s);
-        void                       set_struct_def(value *d);
-        long                       i(void) const;
-        void                       push(value *vp);
-        void                       set_s(const std::string& s);
-        void                       set_i(long i);
-        void                       dump(int space);
-        void                       arr_set(size_t i, value *vp);
-        void                       print(void);
-        void                       arr_push(value *vp);
-        void                       arr_sort(void);
-        void                       set_member(const std::string& s, value *vp);
-        void                       set_def(ast *p);
-        void                       set_func(ast *p);
-        bool                       truthy(void) const;
-        bool                       agg(void);
-        int                        type(void) const;
-        ast                        *func(void);
-        ast                        *def(void);
+        const std::vector<value*>& arr(void)                                   const;
+        const std::string&         s(void)                                     const;
+        const std::string&         name(void)                                  const;
+        scope                      *members(void)                              const;
+        value                      *arr_get(size_t i)                          const;
+        value                      *member(const std::string& mem)             const;
+        long                       i(void)                                     const;
+        void                       dump(int space)                             const;
+        bool                       truthy(void)                                const;
+        bool                       agg(void)                                   const;
+        void                       print(void)                                 const;
+        void                       set_member(const std::string& s, value *vp) const;
+        int                        type(void)                                  const;
+        ast                        *func(void)                                 const;
+        ast                        *def(void)                                  const;
+
+        value *copy(void);
+        void  push(value *vp);
+        void  set_s(const std::string& s);
+        void  set_i(long i);
+        void  arr_set(size_t i, value *vp);
+        void  arr_sort(void);
+        void  set_def(ast *def);
+        void  set_func(ast *func);
 };
 
 #endif // VALUE_H

@@ -1,69 +1,40 @@
 #include "ast.h"
-#include "value.h"
 #include "lib.h"
 #include "scope.h"
-#include <array>
+#include "value.h"
 #include <cstdio>
 #include <unordered_set>
 
 using std::string;
 using std::vector;
 
-static const std::array<string,NR_AST> AST_NAMES {
-        "AST_ERR",
-        "AST_ASSIGN",
-        "AST_STR",
-        "AST_INT",
-        "AST_ARR",
-        "AST_ARR_ASSIGN",
-        "AST_NIL",
-        "AST_IF",
-        "AST_WHILE",
-        "AST_SUB",
-        "AST_VAR_REF",
-        "AST_LT",
-        "AST_ADD",
-        "AST_LOG_AND",
-        "AST_MUL",
-        "AST_PRINT",
-        "AST_MEMBER_ASSIGN",
-        "AST_ARR_REF",
-        "AST_FUNC_DEF",
-        "AST_FUNC_CALL",
-        "AST_EQ",
-        "AST_RET",
-        "AST_STRUCT_DEF",
-        "AST_CTOR",
-};
-
 ast::ast(void)
 {
-        init(AST_ERR, "", nullptr, 0, nullptr);
 }
 
 ast::ast(int type, long i)
+        : _i {i},
+        _type {type}
 {
-        init(type, "", nullptr, i, nullptr);
+        typeok();
+}
+
+void ast::typeok(void) const
+{
+        in_range(AST_ERR, NR_AST, _type, "invalid ast type: %d", _type);
 }
 
 ast::ast(int type)
+        : _type {type}
 {
-        init(type, "", nullptr, 0, nullptr);
+        typeok();
 }
 
 ast::ast(int type, const string& str)
+        : _str {str},
+        _type {type}
 {
-        init(type, str, nullptr, 0, nullptr);
-}
-
-ast::ast(int type, const string& str, ast *expr)
-{
-        init(type, str, expr, 0, nullptr);
-}
-
-ast::ast(int type, const string& str, ast *idx, ast *expr)
-{
-        init(type, str, expr, 0, idx);
+        typeok();
 }
 
 ast::~ast()
@@ -85,20 +56,6 @@ ast::~ast()
                 delete ap;
 }
 
-void ast::init(int type, const string& str, ast *expr, long i, ast *idx)
-{
-        if (idx)
-                _idx.push_back(idx);
-        _left = nullptr;
-        _right = nullptr;
-        _i = i;
-        _type = type;
-        _str = str;
-        _expr = expr;
-        if (!type_ok(AST_ERR, NR_AST, _type))
-                usage("ast::init(): invalid ast type: %d", _type);
-}
-
 int ast::type(void) const
 {
         return _type;
@@ -114,15 +71,35 @@ void ast::set_expr(ast *expr)
         _expr = expr;
 }
 
-const std::vector<ast*>& ast::idx(void) const
-{
-        return _idx;
-}
-
-
 const string& ast::name(void) const
 {
-        return AST_NAMES.at(_type);
+        static const string names[NR_AST] {
+                "AST_ERR",
+                "AST_ASSIGN",
+                "AST_STR",
+                "AST_INT",
+                "AST_ARR",
+                "AST_ARR_ASSIGN",
+                "AST_NIL",
+                "AST_IF",
+                "AST_WHILE",
+                "AST_SUB",
+                "AST_VAR_REF",
+                "AST_LT",
+                "AST_ADD",
+                "AST_LOG_AND",
+                "AST_MUL",
+                "AST_PRINT",
+                "AST_MEMBER_ASSIGN",
+                "AST_ARR_REF",
+                "AST_FUNC_DEF",
+                "AST_FUNC_CALL",
+                "AST_EQ",
+                "AST_RET",
+                "AST_STRUCT_DEF",
+                "AST_CTOR",
+        };
+        return names[_type];
 }
 
 const string& ast::str(void) const
@@ -140,31 +117,21 @@ void ast::push(ast *ap)
         _arr.push_back(ap);
 }
 
-const vector<ast*>& ast::arr(void) const
-{
-        return _arr;
-}
-
-vector<ast*>& ast::arr_non_const(void)
-{
-        return _arr;
-}
-
-void ast::dump(int space)
+void ast::dump(int space) const
 {
         printf("{\n");
 
         indent(space + 2);
-        printf("type: %s,\n", name().c_str());
+        printf("type: %s,\n", cstr(name()));
 
         if (_type == AST_CTOR) {
                 indent(space + 2);
-                printf("str: %s,\n", str().c_str());
+                printf("str: %s,\n", cstr(_str));
         }
 
         if (_type == AST_STRUCT_DEF) {
                 indent(space + 2);
-                printf("str: %s,\n", str().c_str());
+                printf("str: %s,\n", cstr(_str));
 
                 indent(space + 2);
                 printf("stmts: [\n");
@@ -185,12 +152,12 @@ void ast::dump(int space)
 
         if (_type == AST_VAR_REF) {
                 indent(space + 2);
-                printf("str: %s,\n", str().c_str());
+                printf("str: %s,\n", cstr(_str));
         }
 
         if (_type == AST_ASSIGN) {
                 indent(space + 2);
-                printf("str: %s,\n", str().c_str());
+                printf("str: %s,\n", cstr(_str));
 
                 indent(space + 2);
                 printf("expr: ");
@@ -205,7 +172,7 @@ void ast::dump(int space)
 
         if (_type == AST_STR) {
                 indent(space + 2);
-                printf("str: %s,\n", _str.c_str());
+                printf("str: %s,\n", cstr(_str));
         }
 
         if (_type == AST_INT) {
@@ -226,7 +193,7 @@ void ast::dump(int space)
 
         if (_type == AST_ARR_ASSIGN) {
                 indent(space + 2);
-                printf("str: %s,\n", _str.c_str());
+                printf("str: %s,\n", cstr(_str));
 
                 indent(space + 2);
                 printf("idx: [\n");
@@ -280,7 +247,7 @@ void ast::dump(int space)
 
                 for (const auto &s : _members) {
                         indent(space + 4);
-                        printf("%s,\n", s.c_str());
+                        printf("%s,\n", cstr(s));
                 }
 
                 indent(space + 2);
@@ -289,13 +256,13 @@ void ast::dump(int space)
 
         if (_type == AST_FUNC_DEF) {
                 indent(space + 2);
-                printf("str: %s,\n", _str.c_str());
+                printf("str: %s,\n", cstr(_str));
 
                 indent(space + 2);
                 printf("params: [\n");
                 for (const auto &s : _params) {
                         indent(space + 4);
-                        printf("%s,\n", s.c_str());
+                        printf("%s,\n", cstr(s));
                 }
                 indent(space + 2);
                 printf("],\n");
@@ -313,7 +280,7 @@ void ast::dump(int space)
 
         if (_type == AST_ARR_REF) {
                 indent(space + 2);
-                printf("str: %s,\n", _str.c_str());
+                printf("str: %s,\n", cstr(_str));
 
                 indent(space + 2);
                 printf("idx: [\n");
@@ -327,7 +294,7 @@ void ast::dump(int space)
 
         if (_type == AST_FUNC_CALL) {
                 indent(space + 2);
-                printf("str: %s,\n", _str.c_str());
+                printf("str: %s,\n", cstr(_str));
 
                 indent(space + 2);
                 printf("args: [\n");
@@ -364,12 +331,12 @@ void ast::dump(int space)
         printf("},\n");
 }
 
-value *ast::expr_eval(void)
+value *ast::expr_eval(void) const
 {
         value *vp = nullptr;
 
         if (_type == AST_CTOR) {
-                vp = new value{VAL_STRUCT, curr_scope};
+                vp = new value{VAL_STRUCT};
                 vp->set_def(curr_scope->get(_str)->def());
 
                 ast *ctor = nullptr;
@@ -420,7 +387,7 @@ value *ast::expr_eval(void)
         } else if (_type == AST_ARR_REF) {
                 vp = arr_ref()->copy();
         } else {
-                usage("ast::expr_eval(): bad expression type: %s", name().c_str());
+                usage("ast::expr_eval(): bad expression type: %s", cstr(name()));
         }
 
         return vp;
@@ -429,21 +396,11 @@ value *ast::expr_eval(void)
 value *ast::eval(void) const
 {
         if (_type == AST_STRUCT_DEF) {
-                auto vp = new value{VAL_STRUCT_DEF, str()};
+                auto vp = new value{VAL_STRUCT_DEF, _str};
                 vp->set_def(copy());
-                curr_scope->set(str(), vp);
-                return nullptr;
-
-                /*
                 curr_scope->set(_str, vp);
-                auto tmp = curr_scope;
-                curr_scope = vp->members();
-                for (const auto &p : _stmts)
-                        p->eval();
-
-                curr_scope = tmp;
                 return nullptr;
-                */
+
         }
 
         if (_type == AST_RET)
@@ -512,7 +469,7 @@ value *ast::eval(void) const
 
                 auto vp = curr_scope->get(id);
                 if (!vp)
-                        usage("ast::ast_eval(): undefined array: %s", id.c_str());
+                        usage("ast::ast_eval(): undefined array: %s", cstr(id));
 
                 if (curr_scope->get(id)->type() != VAL_ARR)
                         usage("ast::ast_eval(): trying to index non array");
@@ -553,14 +510,14 @@ value *ast::eval(void) const
 
                 auto vp = curr_scope->get(id);
                 if (!vp)
-                        usage("ast::ast_eval(): undefined struct: %s", id.c_str());
+                        usage("ast::ast_eval(): undefined struct: %s", cstr(id));
 
                 if (vp->type() == VAL_ARR) {
                         auto id = _str;
 
                         auto vp = curr_scope->get(id);
                         if (!vp)
-                                usage("ast::ast_eval(): undefined struct: %s", id.c_str());
+                                usage("ast::ast_eval(): undefined struct: %s", cstr(id));
 
                         if (vp->type() != VAL_ARR)
                                 usage("ast::ast_eval(): only array struct supported right now");
@@ -568,7 +525,7 @@ value *ast::eval(void) const
                         auto mem = _members[0];
 
                         if (mem == "push")
-                                vp->arr_push(_expr->expr_eval());
+                                vp->push(_expr->expr_eval());
                         if (mem == "sort")
                                 vp->arr_sort();
                         return nullptr;
@@ -597,25 +554,31 @@ value *ast::eval(void) const
 
 void ast::push_idx(ast *idx)
 {
+        if (!idx)
+                usage("ast::push_idx: array index cannot be null");
+
         _idx.push_back(idx);
 }
 
-void ast::push_stmt(ast *ap)
+void ast::push_stmt(ast *stmt)
 {
-        _stmts.push_back(ap);
+        if (!stmt)
+                usage("ast::push_stmt: statment cannot be null");
+
+        _stmts.push_back(stmt);
 }
 
-void ast::set_left(ast *ap)
+void ast::set_left(ast *left)
 {
-        _left = ap;
+        _left = left;
 }
 
-void ast::set_right(ast *ap)
+void ast::set_right(ast *right)
 {
-        _right = ap;
+        _right = right;
 }
 
-long ast::math_eval(void)
+long ast::math_eval(void) const
 {
         value *vp = nullptr;
         long tmp;
@@ -633,32 +596,32 @@ long ast::math_eval(void)
                 vp = var_ref();
 
                 if (vp->type() != VAL_INT)
-                        usage("ast::math_eval: non integer used in comparison: %s", _str.c_str());
+                        usage("ast::math_eval: non integer used in comparison: %s", cstr(_str));
 
                 return vp->i();
         case AST_ARR_REF:
                 vp = arr_ref();
 
                 if (vp->type() != VAL_INT)
-                        usage("ast::math_eval: non integer used in comparison: %s", _str.c_str());
+                        usage("ast::math_eval: non integer used in comparison: %s", cstr(_str));
 
                 return vp->i();
         case AST_FUNC_CALL:
                 vp = call();
 
                 if (vp->type() != VAL_INT)
-                        usage("ast::logic_eval: non integer used in comparison: %s", _str.c_str());
+                        usage("ast::logic_eval: non integer used in comparison: %s", cstr(_str));
 
                 tmp = vp->i();
                 delete vp;
                 return tmp;
         }
 
-        usage("ast::math_eval: bad ast type for expression: %s", name().c_str());
+        usage("ast::math_eval: bad ast type for expression: %s", cstr(name()));
         exit(EXIT_FAILURE);
 }
 
-long ast::logic_eval(void)
+long ast::logic_eval(void) const
 {
         value *vp = nullptr;
         long tmp;
@@ -680,44 +643,46 @@ long ast::logic_eval(void)
                 vp = var_ref();
 
                 if (vp->type() != VAL_INT)
-                        usage("ast::logic_eval: non integer used in comparison: %s", _str.c_str());
+                        usage("ast::logic_eval: non integer used in comparison: %s", cstr(_str));
 
                 return vp->i();
         case AST_ARR_REF:
                 vp = arr_ref();
 
                 if (vp->type() != VAL_INT)
-                        usage("ast::logic_eval: non integer used in comparison: %s", _str.c_str());
+                        usage("ast::logic_eval: non integer used in comparison: %s", cstr(_str));
 
                 return vp->i();
         case AST_FUNC_CALL:
                 vp = call();
 
                 if (vp->type() != VAL_INT)
-                        usage("ast::logic_eval: non integer used in comparison: %s", _str.c_str());
+                        usage("ast::logic_eval: non integer used in comparison: %s", cstr(_str));
 
                 tmp = vp->i();
                 delete vp;
                 return tmp;
         }
 
-        usage("ast::logic_eval: bad ast type for comparison: %s", name().c_str());
+        usage("ast::logic_eval: bad ast type for comparison: %s", cstr(name()));
         exit(EXIT_FAILURE);
 }
 
 void ast::set_type(int type)
 {
         _type = type;
-        if (!type_ok(AST_ERR, NR_AST, _type))
-                usage("ast::init(): invalid ast type: %d", _type);
+        typeok();
 }
 
-void ast::push_member(const std::string& s)
+void ast::push_member(const std::string& mem)
 {
-        _members.push_back(s);
+        if (mem == "")
+                usage("ast::push_member: member cannot be empty string");
+
+        _members.push_back(mem);
 }
 
-int ast::expr_type(void)
+int ast::expr_type(void) const
 {
         ast *prev = nullptr;
         auto curr = _left;
@@ -766,7 +731,7 @@ ast *ast::left(void)
         return _left;
 }
 
-std::string ast::str_expr(void)
+std::string ast::str_expr(void) const
 {
         value *vp = nullptr;
         string tmp;
@@ -780,36 +745,36 @@ std::string ast::str_expr(void)
                 vp = var_ref();
 
                 if (vp->type() != VAL_STR)
-                        usage("ast::str_expr: non string used in string expression: %s", _str.c_str());
+                        usage("ast::str_expr: non string used in string expression: %s", cstr(_str));
 
                 return vp->s();
         case AST_ARR_REF:
                 vp = arr_ref();
 
                 if (vp->type() != VAL_STR)
-                        usage("ast::str_expr: non string used in string expression: %s", _str.c_str());
+                        usage("ast::str_expr: non string used in string expression: %s", cstr(_str));
 
                 return vp->s();
         case AST_FUNC_CALL:
                 vp = call();
 
                 if (vp->type() != VAL_STR)
-                        usage("ast::str_expr: non string used in string expression: %s", _str.c_str());
+                        usage("ast::str_expr: non string used in string expression: %s", cstr(_str));
 
                 tmp = vp->s();
                 delete vp;
                 return tmp;
         }
 
-        usage("ast::str_expr: bad ast type for string expression: %s", name().c_str());
+        usage("ast::str_expr: bad ast type for string expression: %s", cstr(name()));
         exit(EXIT_FAILURE);
 }
 
-value *ast::arr_ref(void)
+value *ast::arr_ref(void) const
 {
         auto vp = curr_scope->get(_str);
         if (!vp)
-                usage("ast::arr_ref(): undefined variable: %s", _str.c_str());
+                usage("ast::arr_ref(): undefined variable: %s", cstr(_str));
 
         for (size_t i = 0; i < _idx.size() - 1; i++) {
                 auto idx = _idx[i]->expr_eval();
@@ -832,24 +797,19 @@ value *ast::arr_ref(void)
         return vp;
 }
 
-value *ast::var_ref(void)
+value *ast::var_ref(void) const
 {
         auto vp = curr_scope->get(_str);
 
         if (!vp)
-                usage("ast::var_ref: undefined variable: %s", _str.c_str());
+                usage("ast::var_ref: undefined variable: %s", cstr(_str));
 
         return vp;
 }
 
-void ast::set_str(const std::string& s)
+void ast::push_param(const std::string& param)
 {
-        _str = s;
-}
-
-void ast::push_param(const std::string& s)
-{
-        _params.push_back(s);
+        _params.push_back(param);
 }
 
 ast *ast::copy(void) const
@@ -857,10 +817,10 @@ ast *ast::copy(void) const
         ast *ap = nullptr;
 
         if (_type == AST_CTOR)
-                return new ast{AST_CTOR, str()};
+                return new ast{AST_CTOR, _str};
 
         if (_type == AST_STRUCT_DEF) {
-                ap = new ast{AST_STRUCT_DEF, str()};
+                ap = new ast{AST_STRUCT_DEF, _str};
 
                 for (const auto &p : _stmts)
                         ap->push_stmt(p->copy());
@@ -878,10 +838,10 @@ ast *ast::copy(void) const
                 return new ast{AST_NIL};
 
         if (_type == AST_VAR_REF)
-                return new ast{AST_VAR_REF, str()};
+                return new ast{AST_VAR_REF, _str};
 
         if (_type == AST_ASSIGN) {
-                ap = new ast{AST_ASSIGN, str()};
+                ap = new ast{AST_ASSIGN, _str};
                 ap->set_expr(_expr->copy());
         }
 
@@ -892,7 +852,7 @@ ast *ast::copy(void) const
         }
 
         if (_type == AST_STR)
-                return new ast{AST_STR, str()};
+                return new ast{AST_STR, _str};
 
         if (_type == AST_INT)
                 return new ast{AST_INT, _i};
@@ -996,25 +956,24 @@ const std::string& ast::param(size_t i) const
         return _params.at(i);
 }
 
-std::vector<ast*>& ast::stmts(void)
+const std::vector<ast*>& ast::stmts(void) const
 {
         return _stmts;
 }
 
 value *ast::call(void) const
 {
-        // handle return values tommorrow
         auto vp = curr_scope->get(_str);
 
         if (!vp)
-                usage("ast::call(): undefined function: %s", _str.c_str());
+                usage("ast::call(): undefined function: %s", cstr(_str));
 
         if (vp->type() != VAL_FUNC)
-                usage("ast::call(): not a function: %s", _str.c_str());
+                usage("ast::call(): not a function: %s", cstr(_str));
 
         auto np = vp->func();
         if (_args.size() != np->n_params())
-                usage("ast::call(): wrong number of arguments: %s", _str.c_str());
+                usage("ast::call(): wrong number of arguments: %s", cstr(_str));
 
         auto s = new scope{curr_scope};
         for (size_t i = 0; i < _args.size(); i++)
@@ -1032,9 +991,4 @@ value *ast::call(void) const
         delete s;
 
         return ret;
-}
-
-ast *ast::expr(void)
-{
-        return _expr;
 }

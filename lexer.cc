@@ -45,12 +45,7 @@ const string& lexer::lex(void) const
         return _curr.lex();
 }
 
-const string& lexer::name(void) const
-{
-        return _curr.name();
-}
-
-const int lexer::type(void) const
+int lexer::type(void) const
 {
         return _curr.type();
 }
@@ -58,11 +53,11 @@ const int lexer::type(void) const
 void lexer::expect(int t)
 {
         if (type() != t)
-                usage("lexer::expect(): want %s, got %s", token{t}.name().c_str(), name().c_str());
+                usage("lexer::expect(): want %s, got %s", cstr(token{t}.name()), cstr(_curr.name()));
         next();
 }
 
-const token& lexer::next(void)
+void lexer::next(void)
 {
         for (;;) {
                 auto c = nextchar();
@@ -109,13 +104,8 @@ const token& lexer::next(void)
                         _curr = token{TOK_ERR};
                 }
 
-                return _curr;
+                return;
         }
-}
-
-const token& lexer::curr(void) const
-{
-        return _curr;
 }
 
 int lexer::nextchar(void)
@@ -174,4 +164,9 @@ string lexer::read_str(void)
         }
 
         return s;
+}
+
+long lexer::i(void) const
+{
+        return _curr.i();
 }

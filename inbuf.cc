@@ -1,23 +1,19 @@
 #include "inbuf.h"
+#include "lib.h"
 #include <unistd.h>
 
-inbuf::inbuf(int fd, int size)
-{
-        init(fd, size);
-}
-
-void inbuf::init(int fd, int size)
-{
-        _fd = fd;
-        _sz = size;
-        _buf = new char[_sz];
-        _p = _buf;
-        _endp = _buf;
-}
+enum {
+        INBUF_DEFAULT_SIZE = 4096,
+};
 
 inbuf::inbuf(int fd)
+        : _buf {new char[INBUF_DEFAULT_SIZE]},
+        _p {_buf},
+        _endp {_buf},
+        _fd {fd}
 {
-        init(fd, INBUF_DEFAULT_SIZE);
+        if (fd < 0)
+                usage("inbuf::inbuf(): negative file descriptr");
 }
 
 inbuf::~inbuf()
@@ -25,14 +21,9 @@ inbuf::~inbuf()
         delete[] _buf;
 }
 
-bool inbuf::empty(void)
-{
-        return _p == _endp;
-}
-
 int inbuf::fill(void)
 {
-        auto n = read(_fd, _buf, _sz);
+        auto n = read(_fd, _buf, INBUF_DEFAULT_SIZE);
         if (n < 0)
                 return INBUF_ERR;
         if (n == 0)
@@ -45,9 +36,8 @@ int inbuf::fill(void)
 
 int inbuf::getc(void)
 {
-        if (empty()) {
-                auto ret = fill();
-                if (ret < 0)
+        if (_p == _endp) {
+                if (auto ret = fill(); ret < 0)
                         return ret;
         }
         return *_p++;

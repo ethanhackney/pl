@@ -1,54 +1,49 @@
 #include "lib.h"
-#include "value.h"
 #include "scope.h"
-#include <array>
+#include "value.h"
 #include <algorithm>
 
 using std::string;
 using std::vector;
 
-static const std::array<string,NR_VAL> VAL_NAMES {
-        "VAL_ERR",
-        "VAL_STR",
-        "VAL_INT",
-        "VAL_ARR",
-        "VAL_NIL",
-        "VAL_FUNC",
-        "VAL_STRUCT",
-        "VAL_STRUCT_DEF",
-};
-
 value::value(void)
 {
-        init(VAL_ERR, "", 0, nullptr, nullptr);
+}
+
+void value::typeok(void) const
+{
+        in_range(VAL_ERR, NR_VAL, _type, "invalid value type: %d", _type);
 }
 
 value::value(int type)
+        : _type {type}
 {
-        init(type, "", 0, nullptr, nullptr);
+        typeok();
+        if (type == VAL_STRUCT)
+                _members = new scope{curr_scope};
 }
 
 value::value(int type, long i)
+        : _i {i},
+        _type {type}
 {
-        init(type, "", i, nullptr, nullptr);
+        typeok();
 }
 
 value::value(int type, const string& s)
+        : _s {s},
+        _type {type}
 {
-        init(type, s, 0, nullptr, nullptr);
+        typeok();
         if (type == VAL_STRUCT_DEF)
                 _members = new scope{curr_scope};
 }
 
-value::value(int type, value *vp)
+value::value(int type, ast *func)
+        : _type {type},
+        _func {func}
 {
-        init(type, "", 0, vp, nullptr);
-}
-
-value::value(int type, scope *parent)
-{
-        init(type, "", 0, nullptr, nullptr);
-        _members = new scope{parent};
+        typeok();
 }
 
 value::~value()
@@ -60,19 +55,6 @@ value::~value()
 
         for (auto &vp : _arr)
                 delete vp;
-}
-
-void value::init(int type, const string& s, long i, value *vp, ast *func)
-{
-        _def = nullptr;
-        _members = nullptr;
-        _func = func;
-        _ptr = vp;
-        _i = i;
-        _type = type;
-        _s = s;
-        if (!type_ok(VAL_ERR, NR_VAL, _type))
-                usage("value::init(): invalid value type: %d", _type);
 }
 
 const string& value::s(void) const
@@ -87,7 +69,18 @@ int value::type(void) const
 
 const string& value::name(void) const
 {
-        return VAL_NAMES.at(_type);
+        static const string names[NR_VAL] {
+                "VAL_ERR",
+                "VAL_STR",
+                "VAL_INT",
+                "VAL_ARR",
+                "VAL_NIL",
+                "VAL_FUNC",
+                "VAL_STRUCT",
+                "VAL_STRUCT_DEF",
+        };
+
+        return names[_type];
 }
 
 long value::i(void) const
@@ -105,11 +98,6 @@ const vector<value*>& value::arr(void) const
         return _arr;
 }
 
-vector<value*>& value::arr_non_const(void)
-{
-        return _arr;
-}
-
 void value::set_s(const string& s)
 {
         _s = s;
@@ -120,12 +108,12 @@ void value::set_i(long i)
         _i = i;
 }
 
-void value::dump(int space)
+void value::dump(int space) const
 {
         printf("{\n");
 
         indent(space + 2);
-        printf("type: %s,\n", name().c_str());
+        printf("type: %s,\n", cstr(name()));
 
         if (_type == VAL_STRUCT_DEF) {
                 indent(space + 2);
@@ -145,7 +133,7 @@ void value::dump(int space)
 
         if (_type == VAL_STR) {
                 indent(space + 2);
-                printf("s: %s,\n", _s.c_str());
+                printf("s: %s,\n", cstr(_s));
         }
 
         if (_type == VAL_INT) {
@@ -202,7 +190,7 @@ value *value::copy(void)
         return new value{VAL_INT, _i};
 }
 
-value *value::arr_get(size_t i)
+value *value::arr_get(size_t i) const
 {
         if (i >= _arr.size())
                 usage("value::arr_set(): array index out of range: %zu", i);
@@ -224,10 +212,10 @@ bool value::truthy(void) const
         return true;
 }
 
-void value::print(void)
+void value::print(void) const
 {
         if (_type == VAL_STR)
-                printf("%s", _s.c_str());
+                printf("%s", cstr(_s));
 
         if (_type == VAL_INT)
                 printf("%ld", _i);
@@ -240,11 +228,6 @@ void value::print(void)
         }
 
         // pretty print a function
-}
-
-void value::arr_push(value *vp)
-{
-        _arr.push_back(vp);
 }
 
 void value::arr_sort(void)
@@ -266,52 +249,42 @@ void value::arr_sort(void)
         }
 }
 
-value::value(int type, ast *func)
-{
-        init(type, "", 0, nullptr, func);
-}
-
-ast *value::func(void)
+ast *value::func(void) const
 {
         return _func;
 }
 
-value *value::member(const std::string& s)
+value *value::member(const std::string& mem) const
 {
-        return _members->get(s);
+        return _members->get(mem);
 }
 
-void value::set_member(const std::string& s, value *vp)
+void value::set_member(const std::string& s, value *vp) const
 {
         _members->set(s, vp);
 }
 
-scope *value::members(void)
+scope *value::members(void) const
 {
         return _members;
 }
 
-bool value::agg(void)
+bool value::agg(void) const
 {
         return _type == VAL_ARR || _type == VAL_STRUCT;
 }
 
-void value::set_struct_def(value *d)
+void value::set_def(ast *def)
 {
-        _struct_def = d;
+        _def = def;
 }
 
-void value::set_def(ast *p)
-{
-        _def = p;
-}
-
-ast *value::def(void)
+ast *value::def(void) const
 {
         return _def;
 }
 
-void value::set_func(ast *p)
+void value::set_func(ast *func)
 {
-        _func = p;
+        _func = func;
 }

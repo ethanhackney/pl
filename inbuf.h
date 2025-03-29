@@ -2,27 +2,19 @@
 #define INBUF_H
 
 enum {
-        INBUF_DEFAULT_SIZE = 4096,
-};
-
-enum {
         INBUF_ERR = -2,
         INBUF_EOF = -1,
 };
 
 class inbuf {
 private:
-        char *_buf;
-        char *_p;
-        char *_endp;
-        int  _fd;
-        int  _sz;
+        char *_buf  {nullptr};
+        char *_p    {nullptr};
+        char *_endp {nullptr};
+        int  _fd    {-1};
 
-        void init(int fd, int size);
-        bool empty(void);
         int fill(void);
 public:
-        inbuf(int fd, int size);
         inbuf(int fd);
         ~inbuf();
 

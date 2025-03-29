@@ -64,7 +64,7 @@ void scope::dump(int space)
 
         for (const auto &p : _tab) {
                 indent(space + 2);
-                printf("[%s]: ", p.first.c_str());
+                printf("[%s]: ", cstr(p.first));
                 p.second->dump(space + 4);
         }
 

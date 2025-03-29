@@ -36,65 +36,58 @@ class value;
 
 class ast {
 private:
-        std::vector<std::string> _members;
-        std::vector<std::string> _params;
-        std::vector<ast*>        _arr;
-        std::vector<ast*>        _idx;
-        std::vector<ast*>        _stmts;
-        std::vector<ast*>        _args;
-        std::string              _str;
-        long                     _i;
-        ast                      *_left;
-        ast                      *_right;
-        ast                      *_expr;
-        int                      _type;
+        std::vector<std::string> _members {};
+        std::vector<std::string> _params  {};
+        std::vector<ast*>        _arr     {};
+        std::vector<ast*>        _idx     {};
+        std::vector<ast*>        _stmts   {};
+        std::vector<ast*>        _args    {};
+        std::string              _str     {};
+        long                     _i       {-1};
+        ast                      *_left   {nullptr};
+        ast                      *_right  {nullptr};
+        ast                      *_expr   {nullptr};
+        int                      _type    {AST_ERR};
 
-        std::string str_expr(void);
-        value       *arr_ref(void);
-        value       *var_ref(void);
-        value       *expr_eval(void);
-        value       *call(void) const;
-        void        init(int type, const std::string& str, ast *expr, long i, ast *idx);
-        long        math_eval(void);
-        long        logic_eval(void);
-        ast         *copy(void) const;
-        int         expr_type(void);
+        const std::string& name(void)       const;
+        std::string        str_expr(void)   const;
+        value              *arr_ref(void)   const;
+        value              *var_ref(void)   const;
+        value              *expr_eval(void) const;
+        value              *call(void)      const;
+        void               typeok(void)     const;
+        long               math_eval(void)  const;
+        long               logic_eval(void) const;
+        ast                *copy(void)      const;
+        int                expr_type(void)  const;
 public:
-
         ast(void);
         ast(int type);
         ast(int type, long i);
         ast(int type, const std::string& str);
-        ast(int type, const std::string& str, ast *expr);
-        ast(int type, const std::string& str, ast *idx, ast *expr);
         ~ast();
 
-        const std::vector<ast*>& arr(void) const;
-        const std::vector<ast*>& idx(void) const;
-        const std::string&       name(void) const;
-        const std::string&       str(void) const;
-        std::vector<ast*>&       arr_non_const(void);
-        std::vector<ast*>&       stmts(void);
+        const std::vector<ast*>& stmts(void)     const;
+        const std::string&       str(void)       const;
         const std::string&       param(size_t i) const;
-        const ast                *expr(void) const;
-        size_t                   n_params(void) const;
-        value                    *eval(void) const;
-        long                     i(void) const;
-        void                     push_idx(ast *idx);
-        void                     set_expr(ast *expr);
-        void                     push(ast *ap);
-        void                     dump(int space);
-        void                     push_stmt(ast *ap);
-        void                     set_left(ast *ap);
-        void                     set_right(ast *ap);
-        void                     set_type(int type);
-        void                     push_member(const std::string& s);
-        void                     set_str(const std::string& s);
-        void                     push_param(const std::string& s);
-        void                     push_arg(ast *p);
-        int                      type(void) const;
-        ast                      *left(void);
-        ast                      *expr(void);
+        const ast                *expr(void)     const;
+        size_t                   n_params(void)  const;
+        value                    *eval(void)     const;
+        long                     i(void)         const;
+        void                     dump(int space) const;
+        int                      type(void)      const;
+
+        void push_idx(ast *idx);
+        void set_expr(ast *expr);
+        void push(ast *ap);
+        void push_stmt(ast *stmt);
+        void set_left(ast *left);
+        void set_right(ast *right);
+        void set_type(int type);
+        void push_member(const std::string& mem);
+        void push_param(const std::string& param);
+        void push_arg(ast *p);
+        ast  *left(void);
 };
 
 #endif // #ifndef AST_H

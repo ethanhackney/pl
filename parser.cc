@@ -8,7 +8,7 @@ parser::parser(lexer& lex)
 {
 }
 
-ast *parser::stmt(void)
+ast *parser::stmt(void) const
 {
         if (type() == TOK_STRUCT) {
                 expect(TOK_STRUCT);
@@ -81,10 +81,10 @@ ast *parser::stmt(void)
 
                 auto vp = curr_scope->get(id);
                 if (!vp)
-                        usage("parser::stmt(): undefined function: %s", id.c_str());
+                        usage("parser::stmt(): undefined function: %s", cstr(id));
 
                 if (vp->type() == VAL_STRUCT_DEF)
-                        usage("parser::stmt(): constructors only allowed in assignments... for now: %s", id.c_str());
+                        usage("parser::stmt(): constructors only allowed in assignments... for now: %s", cstr(id));
 
                 expect(TOK_LPAREN);
                 while (type() != TOK_RPAREN) {
@@ -124,7 +124,7 @@ ast *parser::stmt(void)
         return ap;
 }
 
-ast *parser::logic_expr(void)
+ast *parser::logic_expr(void) const
 {
         auto left = cmp_expr();
 
@@ -139,7 +139,7 @@ ast *parser::logic_expr(void)
         return left;
 }
 
-ast *parser::cmp_expr(void)
+ast *parser::cmp_expr(void) const
 {
         auto left = expr();
 
@@ -160,7 +160,7 @@ ast *parser::cmp_expr(void)
         return left;
 }
 
-ast *parser::expr(void)
+ast *parser::expr(void) const
 {
         auto left = term();
 
@@ -183,7 +183,7 @@ ast *parser::expr(void)
         return left;
 }
 
-ast *parser::if_stmt(void)
+ast *parser::if_stmt(void) const
 {
         auto ap = new ast{AST_IF};
 
@@ -203,17 +203,17 @@ ast *parser::if_stmt(void)
         return ap;
 }
 
-void parser::expect(int type)
+void parser::expect(int type) const
 {
         _lex.expect(type);
 }
 
-int parser::type(void)
+int parser::type(void) const
 {
         return _lex.type();
 }
 
-ast *parser::while_stmt(void)
+ast *parser::while_stmt(void) const
 {
         auto ap = new ast{AST_WHILE};
 
@@ -233,7 +233,7 @@ ast *parser::while_stmt(void)
         return ap;
 }
 
-ast *parser::term(void)
+ast *parser::term(void) const
 {
         auto left = factor();
 
@@ -248,7 +248,7 @@ ast *parser::term(void)
         return left;
 }
 
-ast *parser::factor(void)
+ast *parser::factor(void) const
 {
         ast *ap = nullptr;
 
@@ -267,11 +267,6 @@ ast *parser::factor(void)
                         ap->set_type(AST_FUNC_CALL);
                         expect(TOK_LPAREN);
                         
-                        /*
-                        if (!vp)
-                                usage("parser::factor(): undefined function: %s", ap->str().c_str());
-                                */
-
                         auto vp = curr_scope->get(ap->str());
                         if (vp && vp->type() == VAL_STRUCT_DEF)
                                 ap->set_type(AST_CTOR);
@@ -287,7 +282,7 @@ ast *parser::factor(void)
                 ap = new ast{AST_NIL};
                 expect(TOK_NIL);
         } else if (type() == TOK_INT) {
-                ap = new ast{AST_INT, _lex.curr().i()};
+                ap = new ast{AST_INT, _lex.i()};
                 expect(TOK_INT);
         } else if (type() == TOK_STR) {
                 ap = new ast{AST_STR, _lex.lex()};
