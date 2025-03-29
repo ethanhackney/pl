@@ -10,12 +10,12 @@ scope *curr_scope = &global_scope;
 
 scope::scope(void)
 {
-        _parent = nullptr;
 }
 
 scope::scope(scope *parent)
+        : _parent {parent}
 {
-        _parent = parent;
+        _parent = curr_scope;
 }
 
 scope::~scope()
@@ -30,7 +30,7 @@ scope::~scope()
         }
 }
 
-value *scope::get(const string& name)
+value *scope::get(const string& name) const
 {
         auto p = _tab.find(name);
         if (p != _tab.end())
@@ -58,7 +58,7 @@ void scope::set(const string& name, value *v)
         _tab[name] = v;
 }
 
-void scope::dump(int space)
+void scope::dump(int space) const
 {
         printf("{\n");
 
@@ -72,7 +72,7 @@ void scope::dump(int space)
         printf("}\n");
 }
 
-scope *scope::parent(void)
+scope *scope::parent(void) const
 {
         return _parent;
 }

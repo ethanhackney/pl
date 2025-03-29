@@ -1,21 +1,19 @@
 struct array {
+        arr = []
 
+        # make constructors optional
         func ctor() {
-                self.arr = []
         }
 
         func push(v) {
-                self.arr.push_back(v)
+                arr.push(v)
         }
 
         func sort() {
-                sort it
+                arr.sort()
         }
 
         func at(idx) {
-                vp = self.arr
-                for each idx:
-                        vp = vp.at(idx)
-                return vp.at(idx)
+                return arr[idx]
         }
 }

@@ -4,6 +4,7 @@
 #include "inbuf.h"
 #include "scope.h"
 #include "value.h"
+#include "lib.h"
 #include <vector>
 
 #include <unistd.h>
@@ -13,6 +14,8 @@
 #include <sysexits.h>
 
 // add anonymous functions
+//
+// TODO: add more error handling!!!!
 
 int main(int argc, char **argv)
 {
@@ -37,11 +40,7 @@ int main(int argc, char **argv)
                         err(EX_OSERR, "could not close %s", argv[i]);
         }
 
-        auto vp = curr_scope->get("query");
-        if (vp)
-                vp->dump(0);
-
-        vp = curr_scope->get("q");
+        auto vp = curr_scope->get("array");
         if (vp)
                 vp->dump(0);
 }

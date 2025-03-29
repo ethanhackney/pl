@@ -97,7 +97,6 @@ const string& ast::name(void) const
                 "AST_EQ",
                 "AST_RET",
                 "AST_STRUCT_DEF",
-                "AST_CTOR",
         };
         return names[_type];
 }
@@ -123,11 +122,6 @@ void ast::dump(int space) const
 
         indent(space + 2);
         printf("type: %s,\n", cstr(name()));
-
-        if (_type == AST_CTOR) {
-                indent(space + 2);
-                printf("str: %s,\n", cstr(_str));
-        }
 
         if (_type == AST_STRUCT_DEF) {
                 indent(space + 2);
@@ -335,33 +329,14 @@ value *ast::expr_eval(void) const
 {
         value *vp = nullptr;
 
-        if (_type == AST_CTOR) {
-                vp = new value{VAL_STRUCT};
-                vp->set_def(curr_scope->get(_str)->def());
+        if (_type == AST_FUNC_CALL) {
+                auto p = curr_scope->get(_str);
 
-                ast *ctor = nullptr;
-                for (auto &ap : vp->def()->stmts()) {
-                        if (ap->str() == "ctor")
-                                ctor = ap;
-                        else if (ap->type() != AST_FUNC_DEF)
-                                vp->set_member(ap->str(), ap->expr()->expr_eval());
+                if (p && p->type() == VAL_STRUCT_DEF) {
+                        vp = ctor_call();
+                } else {
+                        vp = func_call();
                 }
-
-                auto tmp = curr_scope;
-                curr_scope = vp->members();
-
-                auto s = new scope{curr_scope};
-                for (size_t i = 0; i < ctor->n_params(); i++)
-                        s->set(ctor->param(i), _args[i]->expr_eval());
-
-                curr_scope = s;
-                for (auto &ap : ctor->stmts())
-                        ap->eval();
-
-                delete s;
-                curr_scope = tmp;
-        } else if (_type == AST_FUNC_CALL) {
-                vp = call();
         } else if (_type == AST_SUB || _type == AST_ADD || _type == AST_MUL) {
                 if (_type == AST_ADD && expr_type() == AST_STR) {
                         vp = new value{VAL_STR, str_expr()};
@@ -407,13 +382,14 @@ value *ast::eval(void) const
                 return _expr->expr_eval();
 
         if (_type == AST_FUNC_CALL) {
-                auto vp = call();
+                auto vp = func_call();
                 delete vp;
                 return nullptr;
         }
 
         if (_type == AST_FUNC_DEF) {
-                auto vp = new value{VAL_FUNC, copy()};
+                auto tmp = copy();
+                auto vp = new value{VAL_FUNC, tmp};
                 curr_scope->set(_str, vp);
                 return nullptr;
         }
@@ -607,7 +583,7 @@ long ast::math_eval(void) const
 
                 return vp->i();
         case AST_FUNC_CALL:
-                vp = call();
+                vp = func_call();
 
                 if (vp->type() != VAL_INT)
                         usage("ast::logic_eval: non integer used in comparison: %s", cstr(_str));
@@ -654,7 +630,7 @@ long ast::logic_eval(void) const
 
                 return vp->i();
         case AST_FUNC_CALL:
-                vp = call();
+                vp = func_call();
 
                 if (vp->type() != VAL_INT)
                         usage("ast::logic_eval: non integer used in comparison: %s", cstr(_str));
@@ -756,7 +732,7 @@ std::string ast::str_expr(void) const
 
                 return vp->s();
         case AST_FUNC_CALL:
-                vp = call();
+                vp = func_call();
 
                 if (vp->type() != VAL_STR)
                         usage("ast::str_expr: non string used in string expression: %s", cstr(_str));
@@ -815,9 +791,6 @@ void ast::push_param(const std::string& param)
 ast *ast::copy(void) const
 {
         ast *ap = nullptr;
-
-        if (_type == AST_CTOR)
-                return new ast{AST_CTOR, _str};
 
         if (_type == AST_STRUCT_DEF) {
                 ap = new ast{AST_STRUCT_DEF, _str};
@@ -961,7 +934,7 @@ const std::vector<ast*>& ast::stmts(void) const
         return _stmts;
 }
 
-value *ast::call(void) const
+value *ast::func_call(void) const
 {
         auto vp = curr_scope->get(_str);
 
@@ -979,6 +952,7 @@ value *ast::call(void) const
         for (size_t i = 0; i < _args.size(); i++)
                 s->set(np->param(i), _args[i]->expr_eval());
 
+        // add code to scope code for entering and leaving scopes!!!!
         curr_scope = s;
         value *ret = nullptr;
         for (auto &ap : np->stmts()) {
@@ -991,4 +965,38 @@ value *ast::call(void) const
         delete s;
 
         return ret;
+}
+
+value *ast::ctor_call(void) const
+{
+        auto vp = new value{VAL_STRUCT};
+        vp->set_def(curr_scope->get(_str)->def());
+
+        ast *ctor = nullptr;
+        for (auto &ap : vp->def()->stmts()) {
+                if (ap->str() == "ctor")
+                        ctor = ap;
+                else if (ap->type() != AST_FUNC_DEF)
+                        vp->set_member(ap->str(), ap->expr()->expr_eval());
+        }
+
+        auto tmp = curr_scope;
+        curr_scope = vp->members();
+
+        auto s = new scope{curr_scope};
+        for (size_t i = 0; i < ctor->n_params(); i++)
+                s->set(ctor->param(i), _args[i]->expr_eval());
+
+        curr_scope = s;
+        value *ret = nullptr;
+        for (auto &ap : ctor->stmts()) {
+                ret = ap->eval();
+                if (ret)
+                        usage("ast::ctor_call(): constructor cant have return value");
+        }
+
+        delete s;
+        curr_scope = tmp;
+
+        return vp;
 }

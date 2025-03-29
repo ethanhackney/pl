@@ -28,7 +28,6 @@ enum {
         AST_EQ,
         AST_RET,
         AST_STRUCT_DEF,
-        AST_CTOR,
         NR_AST,
 };
 
@@ -49,17 +48,18 @@ private:
         ast                      *_expr   {nullptr};
         int                      _type    {AST_ERR};
 
-        const std::string& name(void)       const;
-        std::string        str_expr(void)   const;
-        value              *arr_ref(void)   const;
-        value              *var_ref(void)   const;
-        value              *expr_eval(void) const;
-        value              *call(void)      const;
-        void               typeok(void)     const;
-        long               math_eval(void)  const;
-        long               logic_eval(void) const;
-        ast                *copy(void)      const;
-        int                expr_type(void)  const;
+        const std::string& name(void)                      const;
+        std::string        str_expr(void)                  const;
+        value              *ctor_call(void)                const;
+        value              *arr_ref(void)                  const;
+        value              *var_ref(void)                  const;
+        value              *expr_eval(void)                const;
+        value              *func_call(void)                const;
+        void               typeok(void)                    const;
+        long               math_eval(void)                 const;
+        long               logic_eval(void)                const;
+        ast                *copy(void)                     const;
+        int                expr_type(void)                 const;
 public:
         ast(void);
         ast(int type);

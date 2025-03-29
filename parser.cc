@@ -79,13 +79,6 @@ ast *parser::stmt(void) const
         if (type() == TOK_LPAREN) {
                 ap = new ast{AST_FUNC_CALL, id};
 
-                auto vp = curr_scope->get(id);
-                if (!vp)
-                        usage("parser::stmt(): undefined function: %s", cstr(id));
-
-                if (vp->type() == VAL_STRUCT_DEF)
-                        usage("parser::stmt(): constructors only allowed in assignments... for now: %s", cstr(id));
-
                 expect(TOK_LPAREN);
                 while (type() != TOK_RPAREN) {
                         ap->push_arg(expr());
@@ -266,10 +259,6 @@ ast *parser::factor(void) const
                 } else if (type() == TOK_LPAREN) {
                         ap->set_type(AST_FUNC_CALL);
                         expect(TOK_LPAREN);
-                        
-                        auto vp = curr_scope->get(ap->str());
-                        if (vp && vp->type() == VAL_STRUCT_DEF)
-                                ap->set_type(AST_CTOR);
 
                         while (type() != TOK_RPAREN) {
                                 ap->push_arg(logic_expr());

@@ -126,10 +126,10 @@ print(z[1] + "\n")
 
 func pr(name) {
         print(name)
-        test = 5
-        if (test) {
-                print("\n")
-        }
+        # test = 5
+        # if (test) {
+         #        print("\n")
+        # }
 }
 
 name = nil
@@ -202,11 +202,48 @@ struct query {
         }
 }
 
+print("AFTER QUERY DEF\n")
+
+name = "ethan"
+
+morehead = "shit"
+func dothing() {
+        name = "chris"
+        print(name + morehead + "\n")
+}
+dothing()
+print(name + "\n")
+
+print("HERE BEFORE FUNC DEF\n")
 func test() {
         print(name, "\n")
+        struct thing {
+                name = "ethan"
+
+                func ctor() {
+                }
+        }
+        p = thing()
+        print("end of test\n")
 }
 
+print("HERE AFTER FUNC DEF\n")
 test()
 
-q = query("ethan")
-q2 = query("chris")
+gv = "shit"
+
+func out() {
+        name = "ethan"
+        func in() {
+                name = "chris"
+                print(name + "\n")
+                print(gv + "\n")
+        }
+        in()
+        print(name + "\n")
+}
+
+out()
+# 
+# q = query("ethan")
+# q2 = query("chris")

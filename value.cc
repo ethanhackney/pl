@@ -43,6 +43,8 @@ value::value(int type, ast *func)
         : _type {type},
         _func {func}
 {
+        if (!_func)
+                usage("error bad function");
         typeok();
 }
 
