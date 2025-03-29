@@ -1,4 +1,7 @@
 #include "parser.h"
+#include "scope.h"
+#include "value.h"
+#include "lib.h"
 
 parser::parser(lexer& lex)
         : _lex {lex}
@@ -12,6 +15,13 @@ ast *parser::stmt(void)
                 auto ap = new ast{AST_STRUCT_DEF, _lex.lex()};
                 expect(TOK_ID);
                 expect(TOK_LBRACE);
+                // check if already defined
+                while (type() != TOK_RBRACE) {
+                        auto s = stmt();
+                        if (s->type() != AST_ASSIGN && s->type() != AST_FUNC_DEF)
+                                usage("parser::stmt(): must be assignment or function def");
+                        ap->push_stmt(s);
+                }
                 expect(TOK_RBRACE);
                 return ap;
         }
@@ -26,6 +36,7 @@ ast *parser::stmt(void)
         if (type() == TOK_FUNC) {
                 expect(TOK_FUNC);
                 auto ap = new ast{AST_FUNC_DEF, _lex.lex()};
+                // check if already defined
                 expect(TOK_ID);
                 expect(TOK_LPAREN);
                 while (type() != TOK_RPAREN) {
@@ -67,6 +78,14 @@ ast *parser::stmt(void)
 
         if (type() == TOK_LPAREN) {
                 ap = new ast{AST_FUNC_CALL, id};
+
+                auto vp = curr_scope->get(id);
+                if (!vp)
+                        usage("parser::stmt(): undefined function: %s", id.c_str());
+
+                if (vp->type() == VAL_STRUCT_DEF)
+                        usage("parser::stmt(): constructors only allowed in assignments... for now: %s", id.c_str());
+
                 expect(TOK_LPAREN);
                 while (type() != TOK_RPAREN) {
                         ap->push_arg(expr());
@@ -247,6 +266,16 @@ ast *parser::factor(void)
                 } else if (type() == TOK_LPAREN) {
                         ap->set_type(AST_FUNC_CALL);
                         expect(TOK_LPAREN);
+                        
+                        /*
+                        if (!vp)
+                                usage("parser::factor(): undefined function: %s", ap->str().c_str());
+                                */
+
+                        auto vp = curr_scope->get(ap->str());
+                        if (vp && vp->type() == VAL_STRUCT_DEF)
+                                ap->set_type(AST_CTOR);
+
                         while (type() != TOK_RPAREN) {
                                 ap->push_arg(logic_expr());
                                 if (type() == TOK_COMMA)

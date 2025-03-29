@@ -3,6 +3,7 @@
 #include "parser.h"
 #include "inbuf.h"
 #include "scope.h"
+#include "value.h"
 #include <vector>
 
 #include <unistd.h>
@@ -35,4 +36,12 @@ int main(int argc, char **argv)
                 if (close(fd) < 0)
                         err(EX_OSERR, "could not close %s", argv[i]);
         }
+
+        auto vp = curr_scope->get("query");
+        if (vp)
+                vp->dump(0);
+
+        vp = curr_scope->get("q");
+        if (vp)
+                vp->dump(0);
 }

@@ -28,6 +28,7 @@ enum {
         AST_EQ,
         AST_RET,
         AST_STRUCT_DEF,
+        AST_CTOR,
         NR_AST,
 };
 
@@ -93,6 +94,7 @@ public:
         void                     push_arg(ast *p);
         int                      type(void) const;
         ast                      *left(void);
+        ast                      *expr(void);
 };
 
 #endif // #ifndef AST_H

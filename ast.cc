@@ -32,6 +32,8 @@ static const std::array<string,NR_AST> AST_NAMES {
         "AST_FUNC_CALL",
         "AST_EQ",
         "AST_RET",
+        "AST_STRUCT_DEF",
+        "AST_CTOR",
 };
 
 ast::ast(void)
@@ -155,7 +157,24 @@ void ast::dump(int space)
         indent(space + 2);
         printf("type: %s,\n", name().c_str());
 
+        if (_type == AST_CTOR) {
+                indent(space + 2);
+                printf("str: %s,\n", str().c_str());
+        }
+
         if (_type == AST_STRUCT_DEF) {
+                indent(space + 2);
+                printf("str: %s,\n", str().c_str());
+
+                indent(space + 2);
+                printf("stmts: [\n");
+                for (const auto &ap : _stmts) {
+                        indent(space + 4);
+                        ap->dump(space + 6);
+                }
+
+                indent(space + 2);
+                printf("],\n");
         }
 
         if (_type == AST_RET) {
@@ -349,7 +368,32 @@ value *ast::expr_eval(void)
 {
         value *vp = nullptr;
 
-        if (_type == AST_FUNC_CALL) {
+        if (_type == AST_CTOR) {
+                vp = new value{VAL_STRUCT, curr_scope};
+                vp->set_def(curr_scope->get(_str)->def());
+
+                ast *ctor = nullptr;
+                for (auto &ap : vp->def()->stmts()) {
+                        if (ap->str() == "ctor")
+                                ctor = ap;
+                        else if (ap->type() != AST_FUNC_DEF)
+                                vp->set_member(ap->str(), ap->expr()->expr_eval());
+                }
+
+                auto tmp = curr_scope;
+                curr_scope = vp->members();
+
+                auto s = new scope{curr_scope};
+                for (size_t i = 0; i < ctor->n_params(); i++)
+                        s->set(ctor->param(i), _args[i]->expr_eval());
+
+                curr_scope = s;
+                for (auto &ap : ctor->stmts())
+                        ap->eval();
+
+                delete s;
+                curr_scope = tmp;
+        } else if (_type == AST_FUNC_CALL) {
                 vp = call();
         } else if (_type == AST_SUB || _type == AST_ADD || _type == AST_MUL) {
                 if (_type == AST_ADD && expr_type() == AST_STR) {
@@ -384,6 +428,24 @@ value *ast::expr_eval(void)
 
 value *ast::eval(void) const
 {
+        if (_type == AST_STRUCT_DEF) {
+                auto vp = new value{VAL_STRUCT_DEF, str()};
+                vp->set_def(copy());
+                curr_scope->set(str(), vp);
+                return nullptr;
+
+                /*
+                curr_scope->set(_str, vp);
+                auto tmp = curr_scope;
+                curr_scope = vp->members();
+                for (const auto &p : _stmts)
+                        p->eval();
+
+                curr_scope = tmp;
+                return nullptr;
+                */
+        }
+
         if (_type == AST_RET)
                 return _expr->expr_eval();
 
@@ -493,15 +555,40 @@ value *ast::eval(void) const
                 if (!vp)
                         usage("ast::ast_eval(): undefined struct: %s", id.c_str());
 
-                if (curr_scope->get(id)->type() != VAL_ARR)
-                        usage("ast::ast_eval(): only array struct supported right now");
+                if (vp->type() == VAL_ARR) {
+                        auto id = _str;
 
-                auto mem = _members[0];
+                        auto vp = curr_scope->get(id);
+                        if (!vp)
+                                usage("ast::ast_eval(): undefined struct: %s", id.c_str());
 
-                if (mem == "push")
-                        vp->arr_push(_expr->expr_eval());
-                if (mem == "sort")
-                        vp->arr_sort();
+                        if (vp->type() != VAL_ARR)
+                                usage("ast::ast_eval(): only array struct supported right now");
+
+                        auto mem = _members[0];
+
+                        if (mem == "push")
+                                vp->arr_push(_expr->expr_eval());
+                        if (mem == "sort")
+                                vp->arr_sort();
+                        return nullptr;
+                }
+
+                if (vp->type() != VAL_STRUCT)
+                        usage("ast::ast_eval(): member assign only for structs");
+
+                auto tmp = curr_scope;
+                curr_scope = vp->members();
+
+                for (size_t i = 0; i < _members.size() - 1; i++) {
+                        vp = curr_scope->get(_members[i]);
+                        if (!vp->agg())
+                                usage("ast::ast_eval(): only array or struct supported for member access");
+                        curr_scope = vp->members();
+                }
+
+                curr_scope->set(_members[_members.size() - 1], _expr->expr_eval());
+                curr_scope = tmp;
                 return nullptr;
         }
 
@@ -769,8 +856,14 @@ ast *ast::copy(void) const
 {
         ast *ap = nullptr;
 
+        if (_type == AST_CTOR)
+                return new ast{AST_CTOR, str()};
+
         if (_type == AST_STRUCT_DEF) {
-                ap = new ast{AST_STRUCT_DEF};
+                ap = new ast{AST_STRUCT_DEF, str()};
+
+                for (const auto &p : _stmts)
+                        ap->push_stmt(p->copy());
         }
 
         if (_type == AST_RET) {
@@ -939,4 +1032,9 @@ value *ast::call(void) const
         delete s;
 
         return ret;
+}
+
+ast *ast::expr(void)
+{
+        return _expr;
 }

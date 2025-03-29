@@ -70,6 +70,12 @@ const token& lexer::next(void)
                 if (isspace(c))
                         continue;
 
+                if (c == '#') {
+                        while (c != '\n')
+                                c = nextchar();
+                        continue;
+                }
+
                 auto p = char_map.find(c);
                 if (p != char_map.end()) {
                         if (p->second == TOK_ASSIGN) {
@@ -85,7 +91,7 @@ const token& lexer::next(void)
                         }
                 } else if (isdigit(c)) {
                         _curr = token{TOK_INT, read_num(c)};
-                } else if (isalpha(c)) {
+                } else if (isalpha(c) || c == '_') {
                         _curr = token{TOK_ID, read_word(c)};
                         auto p = kwords.find(_curr.lex());
                         if (p != kwords.end())
@@ -143,7 +149,7 @@ string lexer::read_word(int c)
 {
         string w;
 
-        while (isalpha(c)) {
+        while (isalpha(c) || isdigit(c) || c == '_') {
                 w += c;
                 c = nextchar();
         }

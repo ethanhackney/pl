@@ -7,7 +7,7 @@ using std::string;
 static const std::array<string,NR_TOK> TOK_NAMES {
         "TOK_ERR",
         "TOK_EOF",
-        "TOK_WORD",
+        "TOK_ID",
         "TOK_ASSIGN",
         "TOK_INT",
         "TOK_STR",

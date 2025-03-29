@@ -1,5 +1,6 @@
 #include "lib.h"
 #include "scope.h"
+#include "value.h"
 #include <unordered_set>
 
 using std::string;
@@ -43,37 +44,59 @@ value *scope::get(const string& name)
 
 void scope::set(const string& name, value *v)
 {
-        if (_tab.find(name) != _tab.end()) {
-                auto curr = _tab[name];
-                if (curr->type() != VAL_ARR) {
-                        delete curr;
-                } else {
-                        _ref[curr]--;
-                        if (_ref[curr] == 0)
-                                delete curr;
-                }
-        }
+        std::unordered_set<int> simple_type {
+                VAL_STR,
+                VAL_INT,
+        };
 
-        if (v->type() == VAL_ARR)
+        if (_tab.find(name) != _tab.end())
+                free(name);
+
+        if (simple_type.find(v->type()) == simple_type.end())
                 _ref[v]++;
 
         _tab[name] = v;
 }
 
-void scope::dump(void)
+void scope::dump(int space)
 {
         printf("{\n");
 
         for (const auto &p : _tab) {
-                indent(2);
+                indent(space + 2);
                 printf("[%s]: ", p.first.c_str());
-                p.second->dump(4);
+                p.second->dump(space + 4);
         }
 
+        indent(space - 2);
         printf("}\n");
 }
 
 scope *scope::parent(void)
 {
         return _parent;
+}
+
+void scope::free(const std::string& name)
+{
+        std::unordered_set<int> simple_type {
+                VAL_STR,
+                VAL_INT,
+        };
+
+        auto curr = _tab[name];
+
+        if (simple_type.find(curr->type()) != simple_type.end()) {
+                delete curr;
+                return;
+        }
+
+        _ref[curr]--;
+        if (_ref[curr] == 0)
+                delete curr;
+}
+
+const std::unordered_map<std::string,value*>& scope::tab(void) const
+{
+        return _tab;
 }

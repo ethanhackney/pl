@@ -1,5 +1,6 @@
 #include "lib.h"
 #include "value.h"
+#include "scope.h"
 #include <array>
 #include <algorithm>
 
@@ -12,7 +13,9 @@ static const std::array<string,NR_VAL> VAL_NAMES {
         "VAL_INT",
         "VAL_ARR",
         "VAL_NIL",
-        "VAL_PTR",
+        "VAL_FUNC",
+        "VAL_STRUCT",
+        "VAL_STRUCT_DEF",
 };
 
 value::value(void)
@@ -33,7 +36,8 @@ value::value(int type, long i)
 value::value(int type, const string& s)
 {
         init(type, s, 0, nullptr, nullptr);
-
+        if (type == VAL_STRUCT_DEF)
+                _members = new scope{curr_scope};
 }
 
 value::value(int type, value *vp)
@@ -41,9 +45,18 @@ value::value(int type, value *vp)
         init(type, "", 0, vp, nullptr);
 }
 
+value::value(int type, scope *parent)
+{
+        init(type, "", 0, nullptr, nullptr);
+        _members = new scope{parent};
+}
+
 value::~value()
 {
         delete _func;
+        delete _members;
+        if (_type == VAL_STRUCT_DEF)
+                delete _def;
 
         for (auto &vp : _arr)
                 delete vp;
@@ -51,6 +64,8 @@ value::~value()
 
 void value::init(int type, const string& s, long i, value *vp, ast *func)
 {
+        _def = nullptr;
+        _members = nullptr;
         _func = func;
         _ptr = vp;
         _i = i;
@@ -112,6 +127,22 @@ void value::dump(int space)
         indent(space + 2);
         printf("type: %s,\n", name().c_str());
 
+        if (_type == VAL_STRUCT_DEF) {
+                indent(space + 2);
+                printf("def: ");
+                _def->dump(space + 4);
+        }
+
+        if (_type == VAL_STRUCT) {
+                indent(space + 2);
+                printf("def: ");
+                _def->dump(space + 4);
+
+                indent(space + 2);
+                printf("members: ");
+                _members->dump(space + 4);
+        }
+
         if (_type == VAL_STR) {
                 indent(space + 2);
                 printf("s: %s,\n", _s.c_str());
@@ -162,8 +193,8 @@ value *value::copy(void)
         if (_type == VAL_FUNC)
                 return this;
 
-        if (_type == VAL_PTR)
-                return new value{VAL_PTR, _ptr};
+        if (_type == VAL_STRUCT)
+                return this;
 
         if (_type == VAL_STR)
                 return new value{VAL_STR, _s};
@@ -243,4 +274,44 @@ value::value(int type, ast *func)
 ast *value::func(void)
 {
         return _func;
+}
+
+value *value::member(const std::string& s)
+{
+        return _members->get(s);
+}
+
+void value::set_member(const std::string& s, value *vp)
+{
+        _members->set(s, vp);
+}
+
+scope *value::members(void)
+{
+        return _members;
+}
+
+bool value::agg(void)
+{
+        return _type == VAL_ARR || _type == VAL_STRUCT;
+}
+
+void value::set_struct_def(value *d)
+{
+        _struct_def = d;
+}
+
+void value::set_def(ast *p)
+{
+        _def = p;
+}
+
+ast *value::def(void)
+{
+        return _def;
+}
+
+void value::set_func(ast *p)
+{
+        _func = p;
 }
