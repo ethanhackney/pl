@@ -103,11 +103,13 @@ ast *parser::stmt(void) const
                         ap->push_member(_lex.lex());
                         expect(TOK_ID);
                 }
-                expect(TOK_LPAREN);
-                if (type() != TOK_RPAREN)
-                        ap->set_expr(logic_expr());
-                expect(TOK_RPAREN);
-                return ap;
+                if (type() == TOK_LPAREN) {
+                        expect(TOK_LPAREN);
+                        if (type() != TOK_RPAREN)
+                                ap->set_expr(logic_expr());
+                        expect(TOK_RPAREN);
+                        return ap;
+                }
         } else {
                 ap = new ast{AST_ASSIGN, id};
         }
@@ -266,6 +268,14 @@ ast *parser::factor(void) const
                                         expect(TOK_COMMA);
                         }
                         expect(TOK_RPAREN);
+                } else if (type() == TOK_DOT) {
+                        // TODO: make it work properly with methods
+                        ap->set_type(AST_MEMBER_REF);
+                        while (type() == TOK_DOT) {
+                                expect(TOK_DOT);
+                                ap->push_member(_lex.lex());
+                                expect(TOK_ID);
+                        }
                 }
         } else if (type() == TOK_NIL) {
                 ap = new ast{AST_NIL};

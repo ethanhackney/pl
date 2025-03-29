@@ -97,6 +97,7 @@ const string& ast::name(void) const
                 "AST_EQ",
                 "AST_RET",
                 "AST_STRUCT_DEF",
+                "AST_MEMBER_REF",
         };
         return names[_type];
 }
@@ -122,6 +123,22 @@ void ast::dump(int space) const
 
         indent(space + 2);
         printf("type: %s,\n", cstr(name()));
+
+        if (_type == AST_MEMBER_REF) {
+                indent(space + 2);
+                printf("str: %s,\n", cstr(_str));
+
+                indent(space + 2);
+                printf("members: [\n");
+
+                for (const auto &s : _members) {
+                        indent(space + 4);
+                        printf("%s,\n", cstr(s));
+                }
+
+                indent(space + 2);
+                printf("],\n");
+        }
 
         if (_type == AST_STRUCT_DEF) {
                 indent(space + 2);
@@ -237,6 +254,9 @@ void ast::dump(int space) const
 
         if (_type == AST_MEMBER_ASSIGN) {
                 indent(space + 2);
+                printf("str: %s,\n", cstr(_str));
+
+                indent(space + 2);
                 printf("members: [\n");
 
                 for (const auto &s : _members) {
@@ -246,6 +266,12 @@ void ast::dump(int space) const
 
                 indent(space + 2);
                 printf("],\n");
+
+                if (_expr) {
+                        indent(space + 2);
+                        printf("expr: ");
+                        _expr->dump(space + 4);
+                }
         }
 
         if (_type == AST_FUNC_DEF) {
@@ -329,7 +355,32 @@ value *ast::expr_eval(void) const
 {
         value *vp = nullptr;
 
-        if (_type == AST_FUNC_CALL) {
+        if (_type == AST_MEMBER_REF) {
+                vp = member_ref()->copy();
+                /*
+                auto id = _str;
+
+                auto sp = curr_scope->get(id);
+                if (!sp)
+                        usage("ast::ast_eval(): undefined struct: %s", cstr(id));
+
+                if (sp->type() != VAL_STRUCT)
+                        usage("ast::ast_eval(): member assign only for structs");
+
+                auto tmp = curr_scope;
+                curr_scope = sp->members();
+
+                for (size_t i = 0; i < _members.size() - 1; i++) {
+                        sp = curr_scope->get(_members[i]);
+                        if (!vp->agg())
+                                usage("ast::ast_eval(): only array or struct supported for member access");
+                        curr_scope = sp->members();
+                }
+
+                vp = curr_scope->get(_members[_members.size() - 1])->copy();
+                curr_scope = tmp;
+                */
+        } else if (_type == AST_FUNC_CALL) {
                 auto p = curr_scope->get(_str);
 
                 if (p && p->type() == VAL_STRUCT_DEF) {
@@ -586,11 +637,18 @@ long ast::math_eval(void) const
                 vp = func_call();
 
                 if (vp->type() != VAL_INT)
-                        usage("ast::logic_eval: non integer used in comparison: %s", cstr(_str));
+                        usage("ast::math_eval: non integer used in comparison: %s", cstr(_str));
 
                 tmp = vp->i();
                 delete vp;
                 return tmp;
+        case AST_MEMBER_REF:
+                vp = member_ref();
+
+                if (vp->type() != VAL_INT)
+                        usage("ast::math_eval: non integer used in comparison: %s", cstr(_str));
+
+                return vp->i();
         }
 
         usage("ast::math_eval: bad ast type for expression: %s", cstr(name()));
@@ -638,6 +696,13 @@ long ast::logic_eval(void) const
                 tmp = vp->i();
                 delete vp;
                 return tmp;
+        case AST_MEMBER_REF:
+                vp = member_ref();
+
+                if (vp->type() != VAL_INT)
+                        usage("ast::logic_eval: non integer used in comparison: %s", cstr(_str));
+
+                return vp->i();
         }
 
         usage("ast::logic_eval: bad ast type for comparison: %s", cstr(name()));
@@ -698,6 +763,41 @@ int ast::expr_type(void) const
                 }
         }
 
+        if (prev->type() == AST_MEMBER_REF) {
+                auto vp = prev->member_ref();
+                if (vp->type() == VAL_STR)
+                        return AST_STR;
+                if (vp->type() == VAL_INT)
+                        return AST_INT;
+                /*
+                auto id = prev->str();
+
+                auto sp = curr_scope->get(id);
+                if (!sp)
+                        usage("ast::ast_eval(): undefined struct: %s", cstr(id));
+
+                if (sp->type() != VAL_STRUCT)
+                        usage("ast::ast_eval(): member assign only for structs");
+
+                auto tmp = curr_scope;
+                curr_scope = sp->members();
+
+                for (size_t i = 0; i < prev->members().size() - 1; i++) {
+                        sp = curr_scope->get(prev->members()[i]);
+                        if (!sp->agg())
+                                usage("ast::ast_eval(): only array or struct supported for member access");
+                        curr_scope = sp->members();
+                }
+
+                auto vp = curr_scope->get(prev->members()[prev->members().size() - 1]);
+                curr_scope = tmp;
+                if (vp->type() == VAL_STR)
+                        return AST_STR;
+                if (vp->type() == VAL_INT)
+                        return AST_INT;
+                */
+        }
+
         usage("ast::expr_type(): unknown expression type");
         exit(1);
 }
@@ -740,6 +840,13 @@ std::string ast::str_expr(void) const
                 tmp = vp->s();
                 delete vp;
                 return tmp;
+        case AST_MEMBER_REF:
+                vp = member_ref();
+
+                if (vp->type() != VAL_STR)
+                        usage("ast::str_expr: non string used in string expression: %s", cstr(_str));
+
+                return vp->s();
         }
 
         usage("ast::str_expr: bad ast type for string expression: %s", cstr(name()));
@@ -791,6 +898,13 @@ void ast::push_param(const std::string& param)
 ast *ast::copy(void) const
 {
         ast *ap = nullptr;
+
+        if (_type == AST_MEMBER_REF) {
+                ap = new ast{AST_MEMBER_REF, _str};
+
+                for (const auto &s : _members)
+                        ap->push_member(s);
+        }
 
         if (_type == AST_STRUCT_DEF) {
                 ap = new ast{AST_STRUCT_DEF, _str};
@@ -869,6 +983,9 @@ ast *ast::copy(void) const
 
                 for (const auto &s : _members)
                         ap->push_member(s);
+
+                if (_expr)
+                        ap->set_expr(_expr->copy());
         }
 
         if (_type == AST_FUNC_DEF) {
@@ -999,4 +1116,35 @@ value *ast::ctor_call(void) const
         curr_scope = tmp;
 
         return vp;
+}
+
+const std::vector<std::string>& ast::members(void) const
+{
+        return _members;
+}
+
+value *ast::member_ref(void) const
+{
+        auto id = _str;
+
+        auto sp = curr_scope->get(id);
+        if (!sp)
+                usage("ast::ast_eval(): undefined struct: %s", cstr(id));
+
+        if (sp->type() != VAL_STRUCT)
+                usage("ast::ast_eval(): member assign only for structs");
+
+        auto tmp = curr_scope;
+        curr_scope = sp->members();
+
+        for (size_t i = 0; i < _members.size() - 1; i++) {
+                sp = curr_scope->get(_members[i]);
+                if (!sp->agg())
+                        usage("ast::ast_eval(): only array or struct supported for member access");
+                curr_scope = sp->members();
+        }
+
+        auto ret = curr_scope->get(_members[_members.size() - 1]);
+        curr_scope = tmp;
+        return ret;
 }

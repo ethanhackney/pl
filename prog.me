@@ -1,220 +1,221 @@
-arr = [ 1 ] var = "poop face"
-print(var)
-print("\n")
-name = arr[0] + 1
-print(name)
-print("\n")
-var = "ethan"
-print("here\n")
-name = var + " hackney"
-print(name)
-print("\n")
-print("here\n")
-arr = [ 1, 2, 3, "chris", [ 1, 2, 3 ] ]
-arr[4][0] = "ethan"
-arr[4][1] = 1
-n = 5
-arr[0] = n - 2
-
-j = 0
-n = 0
-while ((n + 2) < 10 && j < 3) {
-        n = n + 1
-        j = j + 1
-}
-
-print(var)
-print("\n")
-
-i = 0
-while (i < 4) {
-        print(i)
-        print(" ")
-        i = i + 1
-}
-print("\n")
-
-list = []
-list.push("ethan")
-list.push("chris")
-list.push("sonny")
-
-copy = []
-i = 0
-while (i < 3) {
-        copy.push(list[i])
-        i = i + 1
-}
-
-i = 0
-while (i < 3) {
-        print(copy[i])
-        print(" ")
-        i = i + 1
-}
-print("\n")
-
-list = [ 3, 2, 1 ]
-list.sort()
-i = 0
-while (i < 3) {
-        print(list[i])
-        print(" ")
-        i = i + 1
-}
-print("\n")
-
-list = []
-i = 0
-while (i < 10) {
-        list.push(i)
-        i = i + 1
-}
-
-i = 0
-sum = 0
-while (i < 10) {
-        print(list[i])
-        print(" ")
-        sum = sum + list[i]
-        i = i + 1
-        p = 0
-}
-print("\n")
-
-print(sum)
-print("\n")
-p = list
-
-list[0] = "chris"
-print(list[0])
-print("\n")
-
-p[0] = "ethan"
-print(list[0])
-print("\n")
-
-print("p[0] = ")
-print(p[0])
-print("\n")
-
-list = [123]
-print("list[0] = ")
-print(list[0])
-print("\n")
-
-print("p[0] = ")
-print(p[0])
-print("\n")
-
-z = ["ethan"]
-a = z
-b = a
-
-print(z[0])
-print("\n")
-
-print(a[0])
-print("\n")
-
-print(b[0])
-print("\n")
-
-b.push("chris")
-print(z[1] + "\n")
-print(z[1] + "\n")
-
-func pr(name) {
-        print(name)
-        # test = 5
-        # if (test) {
-         #        print("\n")
-        # }
-}
-
-name = nil
-
-pr("name")
-
-names = [ "sonny", "chris", "ethan" ]
-all = ""
-i = 0
-while (i < 3) {
-        all = all + names[i] + " "
-        i = i + 1
-}
-print(all + "\n")
-
-pr("fuck nuts")
-
-dd = pr
-dd("hello")
-
-print("hello", " world\n")
-
-global = "ethan"
-p[0] = "shit"
-print("newfn before\n")
-func newfn() {
-        print(global, "\n")
-        p = ["local array"]
-        pr(p[0])
-        return 0
-}
-print("newfn after\n")
-
-newfn()
-print(p[0], "\n")
-
-func retfn() {
-        return 5
-}
-
-print(5 + retfn(), "\n")
-
-i = 0
-while (i == 10) {
-        i = 0
-}
-
-func fact(n) {
-        if (n == 1) {
-                return 1
-        }
-        return n * fact(n - 1)
-}
-
-print(fact(5), "\n")
-
-name = "ethan"
-name = name
-print(name, "\n")
-
-struct query {
-        name = "ethan"
-
-        func ctor(s) {
-                name = s
-        }
-
-        func get_name() {
-                return name
-        }
-}
-
-print("AFTER QUERY DEF\n")
-
-name = "ethan"
-
-morehead = "shit"
-func dothing() {
-        name = "chris"
-        print(name + morehead + "\n")
-}
-dothing()
-print(name + "\n")
+# arr = [ 1 ] var = "poop face"
+# print(var)
+# print("\n")
+# name = arr[0] + 1
+# print(name)
+# print("\n")
+# var = "ethan"
+# print("here\n")
+# name = var + " hackney"
+# print(name)
+# print("\n")
+# print("here\n")
+# arr = [ 1, 2, 3, "chris", [ 1, 2, 3 ] ]
+# arr[4][0] = "ethan"
+# arr[4][1] = 1
+# n = 5
+# arr[0] = n - 2
+# 
+# j = 0
+# n = 0
+# while ((n + 2) < 10 && j < 3) {
+#         n = n + 1
+#         j = j + 1
+# }
+# 
+# print(var)
+# print("\n")
+# 
+# i = 0
+# while (i < 4) {
+#         print(i)
+#         print(" ")
+#         i = i + 1
+# }
+# print("\n")
+# 
+# list = []
+# # list.push("ethan")
+# # list.push("chris")
+# # list.push("sonny")
+# 
+# copy = []
+# i = 0
+# while (i < 3) {
+#         copy.push(list[i])
+#         i = i + 1
+# }
+# 
+# i = 0
+# while (i < 3) {
+#         print(copy[i])
+#         print(" ")
+#         i = i + 1
+# }
+# print("\n")
+# 
+# list = [ 3, 2, 1 ]
+# # list.sort()
+# i = 0
+# while (i < 3) {
+#         print(list[i])
+#         print(" ")
+#         i = i + 1
+# }
+# print("\n")
+# 
+# list = []
+# i = 0
+# while (i < 10) {
+#         list.push(i)
+#         i = i + 1
+# }
+# 
+# i = 0
+# sum = 0
+# while (i < 10) {
+#         print(list[i])
+#         print(" ")
+#         sum = sum + list[i]
+#         i = i + 1
+#         p = 0
+# }
+# print("\n")
+# 
+# print(sum)
+# print("\n")
+# p = list
+# 
+# list[0] = "chris"
+# print(list[0])
+# print("\n")
+# 
+# p[0] = "ethan"
+# print(list[0])
+# print("\n")
+# 
+# print("p[0] = ")
+# print(p[0])
+# print("\n")
+# 
+# list = [123]
+# print("list[0] = ")
+# print(list[0])
+# print("\n")
+# 
+# print("p[0] = ")
+# print(p[0])
+# print("\n")
+# 
+# z = ["ethan"]
+# a = z
+# b = a
+# 
+# print(z[0])
+# print("\n")
+# 
+# print(a[0])
+# print("\n")
+# 
+# print(b[0])
+# print("\n")
+# 
+# # b.push("chris")
+# print(z[1] + "\n")
+# print(z[1] + "\n")
+# 
+# func pr(name) {
+#         print(name)
+#         # test = 5
+#         # if (test) {
+#          #        print("\n")
+#         # }
+# }
+# 
+# name = nil
+# 
+# pr("name")
+# 
+# names = [ "sonny", "chris", "ethan" ]
+# all = ""
+# i = 0
+# while (i < 3) {
+#         all = all + names[i] + " "
+#         i = i + 1
+# }
+# print(all + "\n")
+# 
+# pr("fuck nuts")
+# 
+# dd = pr
+# dd("hello")
+# 
+# print("hello", " world\n")
+# 
+# global = "ethan"
+# p[0] = "shit"
+# print("newfn before\n")
+# func newfn() {
+#         print(global, "\n")
+#         p = ["local array"]
+#         pr(p[0])
+#         return 0
+# }
+# print("newfn after\n")
+# 
+# newfn()
+# print(p[0], "\n")
+# 
+# func retfn() {
+#         return 5
+# }
+# 
+# print(5 + retfn(), "\n")
+# 
+# i = 0
+# while (i == 10) {
+#         i = 0
+# }
+# 
+# func fact(n) {
+#         if (n == 1) {
+#                 return 1
+#         }
+#         return n * fact(n - 1)
+# }
+# 
+# print(fact(5), "\n")
+# 
+# name = "ethan"
+# name = name
+# print(name, "\n")
+# 
+# struct query {
+#         name = "ethan"
+# 
+#         func ctor(s) {
+#                 name = s
+#         }
+# 
+#         func get_name() {
+#                 return name
+#         }
+# }
+# 
+# print("AFTER QUERY DEF\n")
+# 
+# name = "ethan"
+# 
+# morehead = "shit"
+# func dothing() {
+#         name = "chris"
+#         print(name + morehead + "\n")
+# }
+# dothing()
+# print(name + "\n")
 
 print("HERE BEFORE FUNC DEF\n")
+name = "global"
 func test() {
         print(name, "\n")
         struct thing {
@@ -225,6 +226,10 @@ func test() {
         }
         p = thing()
         print("end of test\n")
+        p.name = "ethan"
+        print("before expression\n")
+        print(p.name + "\n")
+        print("after expression\n")
 }
 
 print("HERE AFTER FUNC DEF\n")
